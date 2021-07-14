@@ -1,3 +1,10 @@
+data "template_file" "startup_script" {
+  template = "${file("./init.sh")}"
+  vars = {
+    gitlab_root_password = var.gitlab_root_password
+  }
+}
+
 resource "google_compute_instance" "default" {
   name         = "homework-iac3"
   machine_type = "e2-medium"
@@ -17,16 +24,10 @@ resource "google_compute_instance" "default" {
     }
   }
 
-    metadata_startup_script = <<-EOF
-sudo apt-get update -y
-sudo apt-get install -y curl openssh-server ca-certificates tzdata perl
-curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | sudo bash
-sudo EXTERNAL_URL="http://$(curl ifconfig.io)" apt-get install -y gitlab-ee
-sudo cat /etc/gitlab/initial_root_password
-EOF
+  metadata_startup_script = "${data.template_file.startup_script.rendered}"
 
-    // Apply the firewall rule to allow external IPs to access this instance
-    tags = ["http-server"]
+  // Apply the firewall rule to allow external IPs to access this instance
+  tags = ["http-server"]
 }
 
 resource "google_compute_firewall" "http-server" {
