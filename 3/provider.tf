@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = "${file("./key.json")}"
-  project = "xenon-jetty-317519"
-  region = "us-central1"
+  credentials = file(var.credentials)
+  project     = var.project
+  region      = var.region
 }
