@@ -74,19 +74,11 @@ resource "google_compute_instance" "ansible" {
     }
   }
 
-  metadata_startup_script = <<-EOF
-sudo apt-get update -y
-sudo apt-get install -y software-properties-common
-sudo add-apt-repository --yes --update ppa:ansible/ansible
-sudo apt-get install -y ansible
-sudo echo "[web-servers]" >> "/etc/ansible/hosts"
-sudo echo "web1 ansible_host=${google_compute_instance.web-1.network_interface.0.access_config.0.nat_ip}" >> "/etc/ansible/hosts"
-sudo echo "web2 ansible_host=${google_compute_instance.web-2.network_interface.0.access_config.0.nat_ip}" >> "/etc/ansible/hosts"
-sudo echo "" >> "/etc/ansible/hosts"
-sudo echo "[web-servers:vars]" >> "/etc/ansible/hosts"
-sudo echo "ansible_user=a_tyler" >> "/etc/ansible/hosts"
-sudo echo "ansible_ssh_private_key_file=~/.ssh/ansible" >> "/etc/ansible/hosts"
-EOF
+  metadata_startup_script = templatefile("init.sh.tpl", {
+    web-1              = "${google_compute_instance.web-1.network_interface.0.access_config.0.nat_ip}",
+    web-2              = "${google_compute_instance.web-2.network_interface.0.access_config.0.nat_ip}",
+    ansible_vault_pass = var.ansible_vault_pass
+  })
 
 }
 

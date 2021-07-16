@@ -18,3 +18,8 @@ variable "ansible_pub_key" {
 variable "ansible_user" {
   default = "a_styler"
 }
+
+variable "ansible_vault_pass" {
+  description = "Please enter password for Ansible Vault"
+  type        = string
+}

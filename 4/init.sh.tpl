@@ -1,3 +1,48 @@
+#!/bin/bash
+
+# Install Ansible
+sudo apt-get update -y
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt-get install -y ansible
+
+# Create local Ansible settings
+mkdir /root/ansible
+
+cat <<EOF > /root/ansible/ansible.cfg
+[defaults]
+become                     = true
+become_user                = root
+inventory                  = ./inventory.yml
+vault_password_file        = ./.ansible_vault_pass
+host_key_checking          = False
+
+[ssh_connection]
+ssh_args                   = -o ControlMaster=auto -o ControlPersist=600s -o UserKnownHostsFile=/dev/null
+pipelining                 = True
+EOF
+
+# Create inventory
+cat <<EOF > /root/ansible/inventory.yml
+---
+homework-4:
+  hosts:
+    web-1:
+      ansible_host: ${web-1}
+    web-2:
+      ansible_host: ${web-2}
+  vars:
+    ansible_ssh_user: a_styler
+    ansible_ssh_private_key_file: ~/.ssh/ansible
+EOF
+
+# Create ansible_vault_pass file
+cat <<EOF > /root/ansible/.ansible_vault_pass
+${ansible_vault_pass}
+EOF
+
+# Add private key
+cat <<'EOF' > /root/.ssh/ansible
 $ANSIBLE_VAULT;1.1;AES256
 66633339333232396332366234396264366631373836386664383839383332653566656136613532
 6364393735306137663135623864393236613466333864340a316663396236626131333564613639
@@ -133,3 +178,28 @@ $ANSIBLE_VAULT;1.1;AES256
 39663661613261383839393133333739613234353762396662306163303036613830386565366433
 34343038326366346634336538336632656361626132653931656461373836653431316439646534
 3939343564383635303366346331303339383964633166366238
+EOF
+
+# Decrypt ssh key
+cd /root/ansible && ansible-vault decrypt /root/.ssh/ansible
+
+# Create playbook
+cat <<EOF > /root/ansible/playbook.yml
+---
+- name: Install nginx
+  hosts: homework-4
+  become: true
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started
+EOF
+
+# Start playbook
+cd /root/ansible && ansible-playbook playbook.yml
